@@ -1,0 +1,246 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{hyperref}
+\title{ldms-ug}
+\author{Thomas Tucker}
+\date{October 2023}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+This document represents the community findings of best practices for:
+\begin{itemize}
+    \item Building LDMS from source
+    \item Creating RPM
+    \item Creating and deploying containers implementing LDMS system components
+\end{itemize}.
+
+\section{Build}
+\subsubsection{Requirements}
+
+\begin{itemize}
+    \item Configure must discover and include development libraries where possible
+    \item Features that have their dependencies met will automatically be built
+    \item May be difficult with modules:
+        \begin{itemize}
+            \item User has to know which modules to load
+            \item There are module version requirements
+            \item Some modules are in conflict
+        \end{itemize}
+    \item ../configure must report missing dependencies and fail for features requested with –enable
+    \item “make dist” tar file name should  encode major.minor.fix-<git-hash> in the file name
+        \begin{itemize}
+            \item Currently the major.minor.fix-``git-hash'' naming comes from the configure.ac
+            \item The git hash labeling does not work in all cases
+        \end{itemize}
+    \item Configure should fail if the git hash cannot be obtained (e.g. building as root in a tree owned by ‘user’)
+\end{itemize}
+
+\subsection{Issues}
+    \begin{itemize}
+        \item There are a large number of configuration options Have the defaults (no options specified) build all features that are a common subset across supported linux distributions
+        \item Multiple mechanisms are used to implement ‘optional’ features
+            \begin{itemize}
+                \item \_WITH
+                \item \_ENABLE
+                \item Env vars
+                \item …
+            \end{itemize}
+        \item Many ‘optional’ features are not actually optional and will break the build if disabled, e.g. python
+        \item Need to normalize the way optional features are implemented in configure
+        \item Have a ‘what is enabled’ list of plugins/transports/auths dumped at the end of configure output. 
+        \item Base OS cython on rhel8 is insufficient (ok on rhel9?). We may be able to influence toss cython default, but other OS’s not in our control.
+        \item –disable-* does not work with the libraries that have all the dependencies.
+            \begin{itemize}
+                \item This may occur on a platform with a new compiler set the tree is not tested against.
+                \item Autoconf may estimate a compatible dependency library is available when in fact it isn’t.
+                \item Build target may lack an external dependency present on the build host. (building extras then forces manual deletion in a packaging or deployment process).
+            \end{itemize}
+    \end{itemize}
+
+\subsection{Status}
+    \begin{itemize}
+        \item All work items are currently unassigned to developers
+        \item Need to provide a repository to publish user-group content under github
+    \end{itemize}
+    
+\section{RPM}
+\begin{itemize}
+    \item Assumptions
+        \begin{itemize}
+                \item Python3 and python3-devel are required to build all RPM
+                \begin{itemize}
+                    \item python3 support is presumed to be present on all target systems
+                \end{itemize}
+                \item Any of the ‘standard’ packages that don’t build will break the RPM build process
+        \end{itemize}
+   \item RPM version must be consistent with the version reported by tools
+        \begin{itemize}
+                \item ldms\_ls -V
+                \item ldmsd -V
+                \item Should be able to identify the RPM and/or local build that is currently running
+                \item configure must be run to update the CPP macros that are used by software to report version if you don’t re-run configure, you’ll get “old” information
+                \item should implement procedure to appropriately create tags where necessary
+        \end{itemize}        
+    \item Naming convention
+        \begin{itemize}    
+            \item There are lots of docs on this sort of thing that we should comply with
+                \begin{itemize}
+                    \item \href{http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html}{http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html}
+                    \item \href{https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/}{https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/}
+            \end{itemize}
+        \item If git hash matches release level:
+            \begin{itemize}
+                \item Major.minor.fix
+            \end{itemize}
+        \item otherwise
+            \begin{itemize}
+                    \item major.minor.fix-<patchcount>-<short-hash>
+                    \item Rpm packagers often have to create a local tag with somehow meaningful version name (if they want to avoid seeing patch-hash suffix.
+                    \item Currently the short-hash is not computed correctly in all cases.
+            \end{itemize}
+       \end{itemize}
+    \item make dist tar file output naming must match ldms\_ls -V output
+    \item RPM package for all commands and tools and dependent libraries
+    \item RPM package for ‘standard samplers and stores’
+        \begin{itemize}
+            \item Any sampler that will build regardless of dependencies
+                \begin{itemize}
+                    \item meminfo
+                    \item vmstat
+                    \item procstat
+                    \item procnetdev
+                    \item ??
+                \end{itemize}
+            \item Any store sampler that will build without dependencies
+               \begin{itemize}
+                    \item store
+                    \item json
+                    \item flatfile
+                    \item store\_none
+                    \item store\_function
+                    \item ??
+                \end{itemize}
+        \end{itemize}
+    \item RPM for transports that are “always” available
+        \begin{itemize}
+            \item socket
+        \end{itemize}
+    \item RPM package for each of the special purpose samplers that require dependencies
+        \begin{itemize}
+            \item IB package
+            \item Lustre package
+            \item Slingshot package
+            \item slurm package
+            \item Aries package
+            \item Cray package
+            \item Nvidia package
+        \end{itemize}
+    \item RPM Package for each store (each store has its own set of independent dependencies). tt: Many of these storage plugins will/should be deprecated as part of moving the core technology stores to support decomposition
+        \begin{itemize}
+            \item avro\_kafka
+            \item darshan
+            \item influx
+            \item json
+            \item kafka
+            \item kokkos
+            \item kokkos\_appmon
+            \item papi
+            \item proc\_store
+            \item rabbit
+            \item slurm
+            \item store\_amqp.c
+            \item store\_app
+            \item store\_rabbitkw.c
+            \item store\_rabbitv3.c
+            \item store\_sos.c
+            \item stream
+            \item stream\_dump
+        \end{itemize}
+    \item Packagers please add your suggestions!
+    \item SNL package split:
+        \begin{itemize}
+            \item main(all binaries that got built using/requiring the ldmsd binary)
+            \item Python layer (maybe subsumed in main)
+            \item Doc layer (man, html, etc)
+            \item Any local value-added plugin rpm(s).
+            \item Daemon configuration rpm (genders or maestro or ansible or whatever)
+            \item All the above could be controlled by rpm ‘with’ options and merged into a single rpm output at the whim of the system owner who builds their own deviant rpms.
+        \end{itemize}
+\end{itemize}
+
+\section{Containers}
+\subsection{Build Containers}
+These containers include all of the tools and dependencies necessary to build the top of tree on a white-box Linux platform. These will work on Cray platforms, but for reasons of proprietary library licensing (e.g. Slingshot), they may not be able to build transport plugins for proprietary networks.
+
+The build containers are useful for building other containers as described below
+\subsection{Generic Containers (“Runtime” containers?)}
+These containers provide a platform for deploying LDMS Aggregators and Samplers but with your own configuration. They contain pre-built Maestro and ldmsd along with transport, sampler, authentication and storage plugins.
+
+\subsubsection{Transport Plugins}
+\begin{itemize}
+    \item socket
+\item infiniband
+\item libfabric
+\end{itemize}
+\subsubsection{Authentication Plugins}
+\begin{itemize}
+    \item none
+    \item ovis (we need to rename this or create some reasonable alias such as ‘shared-secret’)
+    \item munge
+\end{itemize}
+\subsubsection{Sampler Plugins}
+\begin{itemize}
+\item meminfo
+\item vmstat
+\item procstatutil
+\item …
+\end{itemize}
+
+\subsection{Storage Plugins}
+\begin{itemize}
+\item SOS
+\item CSV
+\item Avro\_Kafka
+\item . . .
+\end{itemize}
+
+\section{Demo/Pre-configured Containers}
+These containers are derived from the Generic Containers.
+
+These are pre-configured deployments of a Sampler, and an Aggregator. The transport configuration will be sockets. The intention is that a user could trivially stand up a monitoring infrastructure with very little effort. These containers are also a useful starting point for creating a customized deployment, for example over Infiniband instead of sockets.
+
+Reasonable defaults are included for all tunables, for example sampler interval. These can be overridden when the container is started with arguments to the docker run command. For example:
+
+\begin{verbatim}
+    docker run sampler i_am=001 interval=10s
+\end{verbatim}
+
+Host naming will be normalized and controlled by parameters passed to the docker run command, e.g.:
+
+\begin{verbatim}
+    docker run aggregator \
+        i_am=agg-01 \
+        samplers=sampler-[001-100] \
+        storage=/shared/agg-01/ldmsd
+\end{verbatim}
+
+\subsection{Status}
+The following containers are currently available and maintained on docker-hub:
+\begin{itemize}
+\item https://hub.docker.com/r/ovishpc/ldms-dev
+\item https://hub.docker.com/r/ovishpc/ldms-samp
+\item https://hub.docker.com/r/ovishpc/ldms-agg
+\item https://hub.docker.com/r/ovishpc/ldms-storage
+\item https://hub.docker.com/r/ovishpc/ldms-web-svc
+\item https://hub.docker.com/r/ovishpc/ldms-grafana
+\item https://hub.docker.com/r/ovishpc/ldmscon2023
+\end{itemize}
+All of the containers are based on ubuntu:22.04.
+
+The github repository for the source code for building the containers can be found at https://github.com/ovis-hpc/ldms-containers
+
+\end{document}
+
