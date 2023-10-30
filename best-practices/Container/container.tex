@@ -6,6 +6,75 @@
 \date{October 2023}
 
 \begin{document}
-\section{Introduction}
-Initial empty document.
+\section{Containers}
+\subsection{Build Containers}
+These containers include all of the tools and dependencies necessary to build the top of tree on a white-box Linux platform. These will work on Cray platforms, but for reasons of proprietary library licensing (e.g. Slingshot), they may not be able to build transport plugins for proprietary networks.
+
+The build containers are useful for building other containers as described below
+\subsection{Generic Containers (“Runtime” containers?)}
+These containers provide a platform for deploying LDMS Aggregators and Samplers but with your own configuration. They contain pre-built Maestro and ldmsd along with transport, sampler, authentication and storage plugins.
+
+\subsubsection{Transport Plugins}
+\begin{itemize}
+    \item socket
+\item infiniband
+\item libfabric
+\end{itemize}
+\subsubsection{Authentication Plugins}
+\begin{itemize}
+    \item none
+    \item ovis (we need to rename this or create some reasonable alias such as ‘shared-secret’)
+    \item munge
+\end{itemize}
+\subsubsection{Sampler Plugins}
+\begin{itemize}
+\item meminfo
+\item vmstat
+\item procstatutil
+\item …
+\end{itemize}
+
+\subsection{Storage Plugins}
+\begin{itemize}
+\item SOS
+\item CSV
+\item Avro\_Kafka
+\item . . .
+\end{itemize}
+
+\section{Demo/Pre-configured Containers}
+These containers are derived from the Generic Containers.
+
+These are pre-configured deployments of a Sampler, and an Aggregator. The transport configuration will be sockets. The intention is that a user could trivially stand up a monitoring infrastructure with very little effort. These containers are also a useful starting point for creating a customized deployment, for example over Infiniband instead of sockets.
+
+Reasonable defaults are included for all tunables, for example sampler interval. These can be overridden when the container is started with arguments to the docker run command. For example:
+
+\begin{verbatim}
+    docker run sampler i_am=001 interval=10s
+\end{verbatim}
+
+Host naming will be normalized and controlled by parameters passed to the docker run command, e.g.:
+
+\begin{verbatim}
+    docker run aggregator \
+        i_am=agg-01 \
+        samplers=sampler-[001-100] \
+        storage=/shared/agg-01/ldmsd
+\end{verbatim}
+
+\subsection{Status}
+The following containers are currently available and maintained on docker-hub:
+\begin{itemize}
+\item https://hub.docker.com/r/ovishpc/ldms-dev
+\item https://hub.docker.com/r/ovishpc/ldms-samp
+\item https://hub.docker.com/r/ovishpc/ldms-agg
+\item https://hub.docker.com/r/ovishpc/ldms-storage
+\item https://hub.docker.com/r/ovishpc/ldms-web-svc
+\item https://hub.docker.com/r/ovishpc/ldms-grafana
+\item https://hub.docker.com/r/ovishpc/ldmscon2023
+\end{itemize}
+All of the containers are based on ubuntu:22.04.
+
+The github repository for the source code for building the containers can be found at https://github.com/ovis-hpc/ldms-containers
+
 \end{document}
