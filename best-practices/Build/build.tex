@@ -6,6 +6,60 @@
 \date{October 2023}
 
 \begin{document}
-\section{Introduction}
-Initial empty document.
+\section{Build}
+\subsubsection{Requirements}
+
+\begin{itemize}
+    \item Configure must discover and include development libraries where possible
+    \item Features that have their dependencies met will automatically be built
+    \item May be difficult with modules:
+        \begin{itemize}
+            \item User has to know which modules to load
+            \item There are module version requirements
+            \item Some modules are in conflict
+        \end{itemize}
+    \item ../configure must report missing dependencies and fail for features requested with –enable
+    \item “make dist” tar file name should  encode major.minor.fix-<git-hash> in the file name : Complete
+        \begin{itemize}
+            \item Currently the major.minor.fix-``git-hash'' naming comes from the configure.ac
+            \item The git hash labeling does not work in all cases
+        \end{itemize}
+    \item Configure should fail if the git hash cannot be obtained (e.g. building as root in a tree owned by ‘user’): Complete
+        
+\end{itemize}
+
+\subsection{Issues}
+    \begin{itemize}
+        \item There are a large number of configuration options Have the defaults (no options specified) build all features that are a common subset across supported Linux distributions
+        \item Multiple mechanisms are used to implement ‘optional’ features
+            \begin{itemize}
+                \item \_WITH
+                \item \_ENABLE
+                \item Env vars
+                \item …
+            \end{itemize}
+        \item Many ‘optional’ features are not actually optional and will break the build if disabled, e.g. python
+        \item Need to normalize the way optional features are implemented in configure
+        \item Have a ‘what is enabled’ list of plugins/transports/auths dumped at the end of configure output. 
+        \item Base OS cython on rhel8 is insufficient (ok on rhel9?). We may be able to influence toss cython default, but other OS’s not in our control.
+        \item –disable-* does not work with the libraries that have all the dependencies.
+            \begin{itemize}
+                \item This may occur on a platform with a new compiler set the tree is not tested against.
+                \item Autoconf may estimate a compatible dependency library is available when in fact it isn’t.
+                \item Build target may lack an external dependency present on the build host. (building extras then forces manual deletion in a packaging or deployment process).
+            \end{itemize}
+    \end{itemize}
+
+\subsection{Status}
+    \begin{itemize}
+        \item Incomplete
+            \begin{itemize}
+            \item Assign incomplete Issues to developers
+            \end{itemize}
+        \item Complete
+            \begin{itemize}
+            \item Provide a repository to publish user-group content under github : Complete
+            \end{itemize}
+    \end{itemize}
+    
 \end{document}

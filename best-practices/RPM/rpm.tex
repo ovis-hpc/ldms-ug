@@ -6,6 +6,105 @@
 \date{October 2023}
 
 \begin{document}
-\section{Introduction}
-Initial empty document.
+    \section{Assumptions}
+        \begin{itemize}
+                \item Python3 and python3-devel are required to build all RPM
+                \begin{itemize}
+                    \item python3 support is presumed to be present on all target systems
+                \end{itemize}
+                \item Any of the ‘standard’ packages that don’t build will break the RPM build process
+        \end{itemize}
+   \section{RPM Version Consistency}
+        \begin{itemize}
+                \item ldms\_ls -V
+                \item ldmsd -V
+                \item Should be able to identify the RPM and/or local build that is currently running
+                \item configure must be run to update the CPP macros that are used by software to report version if you don’t re-run configure, you’ll get “old” information
+                \item should implement procedure to appropriately create tags where necessary
+        \end{itemize}        
+    \section{Naming Conventions}
+        \begin{itemize}    
+            \item There are lots of docs on this sort of thing that we should comply with
+                \begin{itemize}
+                    \item \href{http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html}{http://ftp.rpm.org/max-rpm/ch-rpm-file-format.html}
+                    \item \href{https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/}{https://docs.fedoraproject.org/en-US/packaging-guidelines/Versioning/}
+            \end{itemize}
+            \item If git hash matches release level:
+                \begin{itemize}
+                    \item Major.minor.fix
+                \end{itemize}
+            \item otherwise
+                \begin{itemize}
+                        \item major.minor.fix-<patchcount>-<short-hash>
+                        \item Rpm packagers often have to create a local tag with somehow meaningful version name (if they want to avoid seeing patch-hash suffix.
+                        \item Currently the short-hash is not computed correctly in all cases.
+                \end{itemize}
+            \item make dist tar file output naming must match ldms\_ls -V output
+        \end{itemize}
+    \section{Platform/Software Independent RPM Packages}
+        \begin{itemize}
+            \item Commands, tools and dependent libraries
+            \item Any sampler that will build regardless of dependencies
+                \begin{itemize}
+                    \item meminfo
+                    \item vmstat
+                    \item procstat
+                    \item procnetdev
+                    \item ??
+                \end{itemize}
+            \item Any store sampler that will build without dependencies
+               \begin{itemize}
+                    \item store
+                    \item json
+                    \item flatfile
+                    \item store\_none
+                    \item store\_function
+                    \item ??
+                \end{itemize}
+            \item RPM for transports that are “always” available
+                \begin{itemize}
+                    \item socket
+                \end{itemize}
+        \end{itemize}
+    \section{RPM Packages Hardware/Platform Specific Samplers}
+        \begin{itemize}
+            \item IB package
+            \item Lustre package
+            \item Slingshot package
+            \item slurm package
+            \item Aries package
+            \item Cray package
+            \item Nvidia package
+        \end{itemize}
+    \section{RPM Packages For Stores}
+        Many of these storage plugins will/should be deprecated as part of moving the core technology stores to support decomposition
+        \begin{itemize}
+            \item avro\_kafka
+            \item darshan
+            \item influx
+            \item json
+            \item kafka
+            \item kokkos
+            \item kokkos\_appmon
+            \item papi
+            \item proc\_store
+            \item rabbit
+            \item slurm
+            \item store\_amqp.c
+            \item store\_app
+            \item store\_rabbitkw.c
+            \item store\_rabbitv3.c
+            \item store\_sos.c
+            \item stream
+            \item stream\_dump
+        \end{itemize}
+    \section{SNL package split}
+        \begin{itemize}
+            \item main(all binaries that got built using/requiring the ldmsd binary)
+            \item Python layer (maybe subsumed in main)
+            \item Doc layer (man, html, etc)
+            \item Any local value-added plugin rpm(s).
+            \item Daemon configuration rpm (genders or maestro or ansible or whatever)
+            \item All the above could be controlled by rpm ‘with’ options and merged into a single rpm output at the whim of the system owner who builds their own deviant rpms.
+        \end{itemize}
 \end{document}
